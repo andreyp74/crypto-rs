@@ -1,76 +1,8 @@
-use std::fmt;
-use std::ops::{Add, Sub, Mul};
 
-#[derive(Debug, Copy, Clone)]
-pub struct FieldElement
-{
-    num: i32,
-    prime: i32
-}
+use crate::crypto::field_element::FieldElement;
+use crate::crypto::point::Point;
 
-impl FieldElement
-{
-    pub fn new(num: i32, prime: i32) -> Self {
-        if num >= prime || num < 0 {
-            panic!("Num {} not in field range 0 to {}", num, prime - 1);
-        }
-
-        FieldElement{
-            num: num,
-            prime: prime
-        }
-    }
-}
-
-impl PartialEq for FieldElement {
-    fn eq(&self, other: &Self) -> bool {
-        self.num == other.num && self.prime == other.prime
-    }
-}
-impl Eq for FieldElement {}
-
-impl Add for FieldElement {
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self {
-        if self.prime != other.prime {
-            panic!("Cannot add two numbers in different Fields");
-        }
-        FieldElement::new((self.num + other.num) % self.prime, self.prime)
-    }
-}
-
-impl Sub for FieldElement {
-    type Output = Self;
-
-    fn sub(self, other: Self) -> Self {
-        if self.prime != other.prime {
-            panic!("Cannot subtract two numbers in different Fields");
-        }
-        let sub = self.num - other.num;
-        if sub < 0 {
-            return FieldElement::new(self.prime + sub, self.prime);
-        }
-        FieldElement::new(sub, self.prime)
-    }
-}
-
-impl Mul for FieldElement {
-    type Output = Self;
-
-    fn mul(self, other: Self) -> Self {
-        if self.prime != other.prime {
-            panic!("Cannot multiply two numbers in different Fields");
-        }
-        FieldElement::new((self.num * other.num) % self.prime, self.prime)
-    }
-}
-
-impl fmt::Display for FieldElement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FieldElement {} ({})", self.num, self.prime)
-    }
-}
+pub mod crypto;
 
 #[cfg(test)]
 mod tests {
@@ -116,7 +48,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected="Cannot add two numbers in different Fields")]
     fn test_add_diff_fields() {
         let a = FieldElement::new(7, 13);
         let b = FieldElement::new(12, 19);
@@ -124,7 +56,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected="Cannot subtract two numbers in different Fields")]
     fn test_sub_diff_fields() {
         let a = FieldElement::new(7, 11);
         let b = FieldElement::new(12, 13);
@@ -138,5 +70,47 @@ mod tests {
         let c = FieldElement::new(10, 13);
 
         assert_eq!(a * b, c);
+    }
+
+    #[test]
+    fn test_pow() {
+        let a = FieldElement::new(3, 13);
+        let b = FieldElement::new(1, 13);
+
+        assert_eq!(a.pow(3), b);
+    }
+
+    #[test]
+    fn test_pow_negative_exp() {
+        let a = FieldElement::new(7, 13);
+        let b = FieldElement::new(8, 13);
+
+        assert_eq!(a.pow(-3), b);
+    }
+
+    #[test]
+    fn test_div() {
+        let a = FieldElement::new(2, 19);
+        let b = FieldElement::new(7, 19);
+        let c = FieldElement::new(3, 19);
+
+        assert_eq!(a/b, c);
+
+        let d = FieldElement::new(7, 19);
+        let e = FieldElement::new(5, 19);
+        let f = FieldElement::new(9, 19);
+
+        assert_eq!(d/e, f);
+    }
+
+    #[test]
+    fn test_point_is_on_the_curve() {
+        let _point = Point::new(-1, -1, 5, 7);
+    }
+
+    #[test]
+    #[should_panic(expected="(-1, -2) is not on the curve")]
+    fn test_point_is_not_on_the_curve() {
+        let _point = Point::new(-1, -2, 5, 7);
     }
 }
